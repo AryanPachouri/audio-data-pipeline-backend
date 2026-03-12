@@ -22,6 +22,7 @@ class AudioRecord(Base):
     duration = Column(Float, nullable=True)           # Audio duration in seconds
     transcription = Column(Text, nullable=True)       # Faster-Whisper output
     language = Column(String, nullable=True)          # Detected language code
+    language_confidence = Column(Float, nullable=True) # Detection confidence (0.0–1.0)
     created_at = Column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),

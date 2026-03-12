@@ -15,9 +15,17 @@ DATABASE_URL = f"sqlite:///{DATABASE_DIR / 'audio_pipeline.db'}"
 
 # ── Faster-Whisper Model ─────────────────────────────────────────────
 # Model sizes: "tiny", "base", "small", "medium", "large-v2", "large-v3"
-WHISPER_MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "base")
+# Use "medium" or "large-v3" for accurate multilingual (Hindi + English) support
+WHISPER_MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "medium")
 WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cpu")          # "cpu" or "cuda"
 WHISPER_COMPUTE_TYPE = os.getenv("WHISPER_COMPUTE_TYPE", "int8")  # "int8", "float16", "float32"
+
+# ── Multilingual Support ─────────────────────────────────────────────
+SUPPORTED_LANGUAGES = {
+    "auto": None,   # Auto-detect
+    "en": "en",     # English
+    "hi": "hi",     # Hindi
+}
 
 # ── Audio Upload Constraints ─────────────────────────────────────────
 ALLOWED_AUDIO_EXTENSIONS = {".wav", ".mp3", ".flac", ".ogg", ".m4a", ".webm"}

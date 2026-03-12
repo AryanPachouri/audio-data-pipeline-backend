@@ -31,7 +31,7 @@ from app.models import AudioRecord
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/dataset", tags=["Dataset"])
+router = APIRouter(prefix="/api/dataset", tags=["Dataset Generation"])
 
 
 @router.get(

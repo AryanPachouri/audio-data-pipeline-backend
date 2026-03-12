@@ -16,7 +16,7 @@ from app.schemas import DeviceAudioResponse
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/device", tags=["Device"])
+router = APIRouter(prefix="/api/device", tags=["Device Records"])
 
 
 @router.get(

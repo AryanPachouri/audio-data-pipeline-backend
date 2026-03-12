@@ -2,15 +2,21 @@
 Audio upload router.
 
 POST /api/audio/upload
+
+Supports multilingual transcription with optional language parameter:
+    - "auto" (default) → automatic language detection
+    - "en"             → force English
+    - "hi"             → force Hindi
 """
 
 import logging
 from pathlib import Path
+from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from app.config import ALLOWED_AUDIO_EXTENSIONS, MAX_FILE_SIZE_MB
+from app.config import ALLOWED_AUDIO_EXTENSIONS, MAX_FILE_SIZE_MB, SUPPORTED_LANGUAGES
 from app.database import get_db
 from app.models import AudioRecord
 from app.schemas import AudioUploadResponse
@@ -19,7 +25,7 @@ from app.services.transcription import transcription_service
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/audio", tags=["Audio"])
+router = APIRouter(prefix="/api/audio", tags=["Audio Upload"])
 
 
 @router.post(
@@ -29,15 +35,31 @@ router = APIRouter(prefix="/api/audio", tags=["Audio"])
     description=(
         "Accepts an audio file and a device ID. The file is saved to the local "
         "filesystem, automatically transcribed using Faster-Whisper, and a "
-        "database record is created."
+        "database record is created.\n\n"
+        "**Multilingual support:** Set `language` to `auto` (default) for "
+        "automatic detection, `en` for English, or `hi` for Hindi."
     ),
 )
 async def upload_audio(
     device_id: str = Form(..., description="Unique identifier of the wearable device"),
-    file: UploadFile = File(..., description="Audio file to upload (.wav, .mp3, .flac, .ogg, .m4a, .webm)"),
+    file: UploadFile = File(..., description="Audio file (.wav, .mp3, .flac, .ogg, .m4a, .webm)"),
+    language: str = Form(
+        "auto",
+        description="Language hint: 'auto' (detect), 'en' (English), 'hi' (Hindi)",
+    ),
     db: Session = Depends(get_db),
 ) -> AudioUploadResponse:
     """Upload an audio file, transcribe it, and store the record."""
+
+    # ── Validate language parameter ──────────────────────────────────
+    if language not in SUPPORTED_LANGUAGES:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unsupported language '{language}'. "
+                f"Allowed: {', '.join(SUPPORTED_LANGUAGES.keys())}"
+            ),
+        )
 
     # ── Validate file extension ──────────────────────────────────────
     ext: str = Path(file.filename or "").suffix.lower()
@@ -71,21 +93,32 @@ async def upload_audio(
         )
 
     # ── Transcribe using Faster-Whisper ──────────────────────────────
+    transcription_text: Optional[str] = None
+    detected_lang: Optional[str] = None
+    lang_confidence: Optional[float] = None
+    duration: Optional[float] = None
+
     try:
-        transcription, language, duration = transcription_service.transcribe(
-            file_info["file_path"]
+        result = transcription_service.transcribe(
+            file_path=file_info["file_path"],
+            language=language,
         )
+        transcription_text = result.text
+        detected_lang = result.detected_language
+        lang_confidence = result.language_confidence
+        duration = result.duration
+
         logger.info(
-            "Transcription successful: device=%s, lang=%s, duration=%.2fs",
+            "Transcription successful: device=%s, detected_lang=%s, "
+            "confidence=%.2f%%, duration=%.2fs",
             device_id,
-            language,
+            detected_lang,
+            (lang_confidence or 0) * 100,
             duration or 0,
         )
     except Exception as e:
         logger.error("Transcription failed for device %s: %s", device_id, e, exc_info=True)
-        transcription = f"[Transcription failed: {e}]"
-        language = None
-        duration = None
+        transcription_text = f"[Transcription failed: {e}]"
 
     # ── Persist database record ──────────────────────────────────────
     record = AudioRecord(
@@ -94,13 +127,14 @@ async def upload_audio(
         file_name=file_info["file_name"],
         file_size=file_info["file_size"],
         duration=duration,
-        transcription=transcription,
-        language=language,
+        transcription=transcription_text,
+        language=detected_lang,
+        language_confidence=lang_confidence,
     )
     db.add(record)
     db.commit()
     db.refresh(record)
 
-    logger.info("Audio record created: id=%d, device=%s", record.id, device_id)
+    logger.info("Audio record created: id=%d, device=%s, lang=%s", record.id, device_id, detected_lang)
 
     return record
