@@ -1,0 +1,19 @@
+# ── Core Framework ───────────────────────────────────────
+fastapi==0.115.0
+uvicorn==0.30.6
+
+# ── Database ─────────────────────────────────────────────
+sqlalchemy==2.0.35
+
+# ── File Uploads ─────────────────────────────────────────
+python-multipart==0.0.12
+aiofiles==24.1.0
+
+# ── Speech-to-Text ───────────────────────────────────────
+faster-whisper==1.1.0
+
+# ── Data Processing ──────────────────────────────────────
+pandas==2.2.3
+
+# ── HTTP Client (Device Simulator) ───────────────────────
+requests==2.32.3

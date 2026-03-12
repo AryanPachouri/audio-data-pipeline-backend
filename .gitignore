@@ -1,0 +1,19 @@
+# ── Python ───────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+
+# ── Runtime Data ─────────────────────────────────
+audio_storage/
+data/
+dataset/
+*.db
+*.zip
+
+# ── IDE / OS ─────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+*.swp

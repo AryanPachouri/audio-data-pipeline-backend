@@ -1,0 +1,183 @@
+{
+  "info": {
+    "name": "Audio Data Pipeline — AI Wearable Devices",
+    "description": "API collection for the Audio Data Pipeline backend.\n\nBackend: FastAPI\nDatabase: SQLite\nSTT: Faster-Whisper\n\nSwagger UI: {{base_url}}/docs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "device_id",
+      "value": "device_101",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": ["{{base_url}}"],
+          "path": [""]
+        },
+        "description": "Verify the server is running and healthy."
+      },
+      "response": [
+        {
+          "name": "200 — Healthy",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"status\": \"healthy\",\n  \"service\": \"Audio Data Pipeline for AI Wearable Devices\",\n  \"version\": \"1.0.0\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Upload Audio",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/audio/upload",
+          "host": ["{{base_url}}"],
+          "path": ["api", "audio", "upload"]
+        },
+        "description": "Upload an audio file from a wearable device.\n\nThe file is saved to disk, transcribed using Faster-Whisper, and a database record is created.\n\nSupported formats: .wav, .mp3, .flac, .ogg, .m4a, .webm",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "device_id",
+              "value": "{{device_id}}",
+              "type": "text",
+              "description": "Unique identifier of the wearable device"
+            },
+            {
+              "key": "file",
+              "type": "file",
+              "src": "",
+              "description": "Audio file to upload (.wav, .mp3, .flac, .ogg, .m4a, .webm)"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 — Upload Successful",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"id\": 1,\n  \"device_id\": \"device_101\",\n  \"file_name\": \"recording_001.wav\",\n  \"file_size\": 64044,\n  \"duration\": 2.0,\n  \"transcription\": \"Hello, this is a test recording from the wearable device.\",\n  \"language\": \"en\",\n  \"created_at\": \"2026-03-12T18:15:00\"\n}"
+        },
+        {
+          "name": "400 — Unsupported Format",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"detail\": \"Unsupported audio format '.txt'. Allowed: .flac, .m4a, .mp3, .ogg, .wav, .webm\"\n}"
+        },
+        {
+          "name": "400 — File Too Large",
+          "status": "Bad Request",
+          "code": 400,
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"detail\": \"File exceeds maximum size of 50 MB.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Device Audio Records",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/device/{{device_id}}/audio?skip=0&limit=50",
+          "host": ["{{base_url}}"],
+          "path": ["api", "device", "{{device_id}}", "audio"],
+          "query": [
+            {
+              "key": "skip",
+              "value": "0",
+              "description": "Number of records to skip (default: 0)"
+            },
+            {
+              "key": "limit",
+              "value": "50",
+              "description": "Max records to return (default: 50, max: 200)"
+            }
+          ]
+        },
+        "description": "Retrieve all audio records for a specific wearable device.\n\nResults are paginated and ordered newest-first."
+      },
+      "response": [
+        {
+          "name": "200 — Records Found",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"device_id\": \"device_101\",\n  \"total_records\": 3,\n  \"records\": [\n    {\n      \"id\": 3,\n      \"device_id\": \"device_101\",\n      \"file_path\": \"audio_storage/device_101/20260312_181700_c3d4e5f6_recording_003.wav\",\n      \"file_name\": \"recording_003.wav\",\n      \"file_size\": 96044,\n      \"duration\": 3.0,\n      \"transcription\": \"Third recording from the wearable device.\",\n      \"language\": \"en\",\n      \"created_at\": \"2026-03-12T18:17:00\"\n    },\n    {\n      \"id\": 2,\n      \"device_id\": \"device_101\",\n      \"file_path\": \"audio_storage/device_101/20260312_181600_b2c3d4e5_recording_002.wav\",\n      \"file_name\": \"recording_002.wav\",\n      \"file_size\": 80044,\n      \"duration\": 2.5,\n      \"transcription\": \"Second recording captured indoors.\",\n      \"language\": \"en\",\n      \"created_at\": \"2026-03-12T18:16:00\"\n    },\n    {\n      \"id\": 1,\n      \"device_id\": \"device_101\",\n      \"file_path\": \"audio_storage/device_101/20260312_181500_a1b2c3d4_recording_001.wav\",\n      \"file_name\": \"recording_001.wav\",\n      \"file_size\": 64044,\n      \"duration\": 2.0,\n      \"transcription\": \"Hello, this is a test recording from the wearable device.\",\n      \"language\": \"en\",\n      \"created_at\": \"2026-03-12T18:15:00\"\n    }\n  ]\n}"
+        },
+        {
+          "name": "200 — No Records",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"device_id\": \"device_999\",\n  \"total_records\": 0,\n  \"records\": []\n}"
+        }
+      ]
+    },
+    {
+      "name": "Download Dataset ZIP",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/dataset/download",
+          "host": ["{{base_url}}"],
+          "path": ["api", "dataset", "download"]
+        },
+        "description": "Download the complete dataset as a ZIP archive.\n\nThe ZIP contains:\n  dataset/\n    audio_1.wav\n    audio_2.wav\n    ...\n    metadata.csv\n\nmetadata.csv columns: audio_file, transcription, device_id"
+      },
+      "response": [
+        {
+          "name": "200 — Dataset ZIP",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            { "key": "Content-Type", "value": "application/zip" },
+            { "key": "Content-Disposition", "value": "attachment; filename=\"dataset.zip\"" }
+          ],
+          "body": "<binary ZIP file containing dataset/ folder with audio files and metadata.csv>"
+        },
+        {
+          "name": "404 — No Records",
+          "status": "Not Found",
+          "code": 404,
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"detail\": \"No audio records found. Upload some audio first.\"\n}"
+        }
+      ]
+    }
+  ]
+}
